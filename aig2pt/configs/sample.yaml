@@ -1,0 +1,23 @@
+# @package _group_
+
+# --- Sampling and Validity Check Configuration ---
+# This file defines the parameters for generating samples from the model
+# and evaluating their validity during the training process.
+
+# Seed for reproducibility of the sampling process
+seed: 127
+
+# Parameters for the generation process
+generation:
+  max_new_tokens: 768
+  temperature: 0.6
+  top_k: null # Use 'null' for no top-k filtering, or omit the line entirely
+
+# Parameters for validity checking during training
+validity:
+  num_samples: 1000
+  gen_batch_size: 256
+  check_interval_multiplier: 2 # e.g., if eval_interval is 1000, check validity every 2000 steps
+  save_on_improve: True # Save a checkpoint when validity metrics improve
+  parsing_mode: 'robust' # The method used to parse generated sequences back into graphs
+

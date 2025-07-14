@@ -1,0 +1,35 @@
+{
+  "added_tokens_decoder": {
+    "69": {
+      "content": "[UNK]",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "70": {
+      "content": "[PAD]",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "71": {
+      "content": "[MASK]",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    }
+  },
+  "clean_up_tokenization_spaces": false,
+  "do_lower_case": false,
+  "model_max_length": 768,
+  "pad_token": "[PAD]",
+  "mask_token": "[MASK]",
+  "unk_token": "[UNK]",
+  "tokenizer_class": "BertTokenizer"
+}

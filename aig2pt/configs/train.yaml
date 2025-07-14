@@ -1,0 +1,54 @@
+# @package _group_
+
+# --- Training Configuration ---
+# This file contains all settings related to the training process,
+# including data, optimization, logging, and system settings.
+
+# --- Data & I/O Settings ---
+dataset: 'aig'
+data_augmentation:
+  num: 5
+  ordering: 'topo'
+out_dir: 'results'
+init_from: 'scratch' # Can be 'scratch', 'resume', or a gpt2* model like 'gpt2-medium'
+
+# --- Logging & Evaluation ---
+eval_interval: 1000
+log_interval: 10
+eval_iters: 200
+always_save_checkpoint: false # If true, saves a checkpoint every eval_interval
+
+# --- Weights & Biases Logging ---
+wandb:
+  log: true
+  project: 'real-g2pt'
+  run_name: null # A specific name for the run, e.g., "g2pt-base-aig". If null, a name is generated.
+
+# --- Training Hyperparameters ---
+batch_size: 64 # Micro-batch size per GPU
+max_iters: 60000 # Total number of training iterations
+gradient_accumulation_steps: 10 # Simulates a larger batch size
+patience: 7 # For early stopping. Set to a high value to disable.
+
+# --- Optimizer (AdamW) ---
+optimizer:
+  learning_rate: 5e-5
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0 # Clip gradients at this value. 0.0 to disable.
+
+# --- Learning Rate Scheduler ---
+lr_scheduler:
+  decay_lr: true
+  warmup_iters: 2000
+  lr_decay_iters: 50000 # Should be ~= max_iters
+  min_lr: 1e-5
+
+# --- System & DDP Settings ---
+ddp:
+  backend: 'nccl' # 'nccl', 'gloo', etc.
+system:
+  compile: false # Use PyTorch 2.0 compile for potential speedup
+  num_loader_workers: 0 # Set to > 0 to use subprocesses for data loading
+

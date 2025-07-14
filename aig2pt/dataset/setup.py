@@ -6,9 +6,11 @@ import json
 
 # --- Configuration ---
 # Path to the dataset-specific config file (will be read and updated)
-DATASET_CONFIG_PATH = 'configs/aig.yaml'
+DATASET_CONFIG_PATH = '../configs/aig.yaml'
 # Path to the base model config file (will be read only)
-MODEL_CONFIG_PATH = 'configs/model.yaml'
+MODEL_CONFIG_PATH = '../configs/network.yaml'  # Corrected to network.yaml
+# Hardcoded path for saving the generated tokenizer files
+TOKENIZER_OUTPUT_PATH = './tokenizer'
 
 
 def parse_aiger_header(file_path):
@@ -89,16 +91,17 @@ def run_analysis_and_update_config(config_path):
         print(f"Error: Config file not found at '{config_path}'")
         sys.exit(1)
 
-    aig_directory = config_data.get('raw_data_dir')
-    if not aig_directory:
-        print(f"Error: 'raw_data_dir' not found in '{config_path}'.")
+    # Use 'raw_data_dir' for analysis, which should be in the config
+    raw_aig_directory = config_data.get('raw_data_dir')
+    if not raw_aig_directory:
+        print(f"Error: 'raw_data_dir' not found in '{config_path}'. This is needed for analysis.")
         sys.exit(1)
 
-    if not os.path.isabs(aig_directory):
+    if not os.path.isabs(raw_aig_directory):
         config_file_dir = os.path.dirname(os.path.abspath(config_path))
-        aig_directory = os.path.normpath(os.path.join(config_file_dir, aig_directory))
+        raw_aig_directory = os.path.normpath(os.path.join(config_file_dir, '..', raw_aig_directory))
 
-    final_stats = analyze_aig_directory(aig_directory)
+    final_stats = analyze_aig_directory(raw_aig_directory)
     if not final_stats:
         return config_data  # Return original data if no stats were generated
 
@@ -119,65 +122,51 @@ def run_analysis_and_update_config(config_path):
     return config_data
 
 
-def create_tokenizer(model_config, dataset_config):
+def create_tokenizer(model_config, dataset_config, tokenizer_path):
     """
-    Generates and saves tokenizer files based on combined model and dataset configs.
+    Generates and saves tokenizer files and returns the final vocabulary size.
     """
     print("\n--- Starting Tokenizer Creation ---")
 
-    # 1. Assemble the full vocabulary
-    vocab = []
+    # --- Step 1: Assemble the main vocabulary (without special tokens) ---
+    main_vocab = []
 
-    # Add base structural tokens
-    vocab.extend(model_config['tokens']['structure'])
+    # Add base structural tokens from the model config
+    main_vocab.extend(model_config.get('tokens', {}).get('structure', []))
 
-    # Add dynamic index tokens based on max_node_count
-    max_nodes = dataset_config['max_node_count']
-    vocab.extend([f"IDX_{i}" for i in range(max_nodes + 1)])
+    # Add dynamic index tokens based on max_node_count from the dataset config
+    max_nodes = dataset_config.get('max_node_count', 0)
+    main_vocab.extend([f"IDX_{i}" for i in range(max_nodes + 1)])
 
     # Add dataset-specific tokens (node types, edge types)
-    vocab.extend(dataset_config['tokens']['node_types'])
-    vocab.extend(dataset_config['tokens']['edge_types'])
+    main_vocab.extend(dataset_config.get('tokens', {}).get('node_types', []))
+    main_vocab.extend(dataset_config.get('tokens', {}).get('edge_types', []))
 
-    # Add dynamic PI and PO count tokens
-    pi_min, pi_max = dataset_config['pi_counts']['min'], dataset_config['pi_counts']['max']
-    po_min, po_max = dataset_config['po_counts']['min'], dataset_config['po_counts']['max']
-    vocab.extend([f"PI_COUNT_{i}" for i in range(pi_min, pi_max + 1)])
-    vocab.extend([f"PO_COUNT_{i}" for i in range(po_min, po_max + 1)])
+    # Create the token-to-id mapping for the main vocabulary. This will be saved to vocab.json.
+    main_vocab_map = {token: i for i, token in enumerate(main_vocab)}
 
-    # Create the token-to-id mapping
-    vocab_map = {token: i for i, token in enumerate(vocab)}
-
-    # Add special tokens at the end
-    special_tokens = model_config['tokens']['special']
+    # --- Step 2: Determine IDs for special tokens ---
+    # Special tokens are added *after* the main vocabulary to ensure they have unique, higher IDs.
+    special_tokens = model_config.get('tokens', {}).get('special', [])
     special_tokens_map = {}
+    next_id = len(main_vocab_map)
     for token in special_tokens:
-        token_id = len(vocab_map)
-        vocab_map[token] = token_id
-        special_tokens_map[token] = token_id
+        special_tokens_map[token] = next_id
+        next_id += 1
 
-    print(f"Vocabulary size: {len(vocab_map)} tokens")
+    # The final vocabulary size includes the special tokens
+    vocab_size = len(main_vocab_map) + len(special_tokens_map)
+    print(f"Vocabulary size: {vocab_size} tokens")
 
-    # 2. Get tokenizer path and create directory
-    tokenizer_path = dataset_config.get('tokenizer_path')
-    if not tokenizer_path:
-        print("Error: 'tokenizer_path' not defined in dataset config. Cannot save tokenizer.")
-        return
-
-    if not os.path.isabs(tokenizer_path):
-        config_file_dir = os.path.dirname(os.path.abspath(DATASET_CONFIG_PATH))
-        tokenizer_path = os.path.normpath(os.path.join(config_file_dir, tokenizer_path))
-
+    # --- Step 3: Create tokenizer directory and save files ---
     os.makedirs(tokenizer_path, exist_ok=True)
     print(f"Saving tokenizer files to: {tokenizer_path}")
 
-    # 3. Create and save tokenizer files
-
-    # --- vocab.json ---
+    # Save vocab.json (main vocabulary only)
     with open(os.path.join(tokenizer_path, 'vocab.json'), 'w') as f:
-        json.dump(vocab_map, f, indent=2)
+        json.dump(main_vocab_map, f, indent=2)
 
-    # --- tokenizer.json ---
+    # Save tokenizer.json (with main vocabulary in model.vocab and special tokens in added_tokens)
     tokenizer_json = {
         "version": "1.0",
         "truncation": None,
@@ -202,14 +191,16 @@ def create_tokenizer(model_config, dataset_config):
         "decoder": {"type": "WordPiece", "prefix": "##", "cleanup": True},
         "model": {
             "type": "WordLevel",
-            "vocab": vocab_map,
+            "vocab": main_vocab_map,  # Use the main map here
             "unk_token": "[UNK]"
         }
     }
+    # Filter out null values from added_tokens before writing
+    tokenizer_json['added_tokens'] = [t for t in tokenizer_json['added_tokens'] if t['id'] is not None]
     with open(os.path.join(tokenizer_path, 'tokenizer.json'), 'w') as f:
         json.dump(tokenizer_json, f, indent=2)
 
-    # --- tokenizer_config.json ---
+    # Save tokenizer_config.json
     tokenizer_config_json = {
         "added_tokens_decoder": {
             str(v): {"content": k, "lstrip": False, "normalized": False, "rstrip": False, "single_word": False,
@@ -228,6 +219,7 @@ def create_tokenizer(model_config, dataset_config):
         json.dump(tokenizer_config_json, f, indent=2)
 
     print("Tokenizer creation complete.")
+    return vocab_size
 
 
 def main():
@@ -245,8 +237,19 @@ def main():
         print(f"Error: Model config file not found at '{MODEL_CONFIG_PATH}'")
         sys.exit(1)
 
-    # Step 3: Create the tokenizer using both configs
-    create_tokenizer(model_config, updated_dataset_config)
+    # Step 3: Create the tokenizer and get the vocabulary size
+    vocab_size = create_tokenizer(model_config, updated_dataset_config, TOKENIZER_OUTPUT_PATH)
+
+    # Step 4: Add the vocabulary size back to the dataset config file
+    if vocab_size is not None:
+        print(f"\nAdding vocab_size ({vocab_size}) to '{DATASET_CONFIG_PATH}'...")
+        updated_dataset_config['vocab_size'] = vocab_size
+        try:
+            with open(DATASET_CONFIG_PATH, 'w') as f:
+                yaml.dump(updated_dataset_config, f, default_flow_style=False, sort_keys=False)
+            print("Successfully added vocab_size to config.")
+        except Exception as e:
+            print(f"Error writing vocab_size to YAML file: {e}")
 
     print("\n--- AIG Dataset Setup Finished ---")
 

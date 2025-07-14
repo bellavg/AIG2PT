@@ -1,0 +1,26 @@
+name: aig
+raw_data_dir: ../raw_data
+processed_data_dir: ''
+tokenizer_path: ./dataset/tokenizer
+block_size: 768
+pad_value: -100
+max_node_count: 56
+pi_counts:
+  min: 2
+  max: 12
+po_counts:
+  min: 2
+  max: 7
+and_counts:
+  min: 3
+  max: 44
+tokens:
+  node_types:
+  - NODE_CONST0
+  - NODE_PI
+  - NODE_AND
+  - NODE_PO
+  edge_types:
+  - EDGE_REG
+  - EDGE_INV
+vocab_size: 72
