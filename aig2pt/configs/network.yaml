@@ -1,0 +1,32 @@
+# @package _group_
+
+# --- Base Network Configuration ---
+# This file defines the core architecture for the G2PT model.
+model_name: 'g2pt'
+
+# Transformer model parameters
+n_layer: 12
+n_head: 12
+n_embd: 768
+dropout: 0.2
+bias: False # Using no bias in linear layers, as is common in GPT models
+
+# --- Vocabulary Definition ---
+# These are the non-dataset-specific tokens required by the model and tokenizer.
+# The final vocab_size will be derived by combining these with dataset-specific tokens.
+tokens:
+  # Structural tokens that define the sequence format for any graph
+  structure:
+    - "<boc>"
+    - "<eoc>"
+    - "<sepc>"
+    - "<bog>"
+    - "<eog>"
+    - "<sepg>"
+
+  # Special tokens required by any tokenizer
+  special:
+    - "[UNK]"
+    - "[PAD]"
+    - "[MASK]"
+
