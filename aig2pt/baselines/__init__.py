@@ -1,6 +1,13 @@
 """
 Baseline models for AIG generation.
 
+This module contains implementations of baseline models for comparison
+with the main AIG2PT model.
+"""
+
+from . import dvae
+
+__all__ = ['dvae']
 This module provides adapters for various baseline models to work with
 AND-Inverter Graph (AIG) inputs for unconditional generation.
 
