@@ -119,7 +119,7 @@ def test_model_init():
 
         config = GPTConfig(
             block_size=1024,
-            vocab_size=vocab_size,  # Use actual vocab size from tokenizer (74)
+            vocab_size=vocab_size,  # Use actual vocab size from tokenizer (currently expected 72)
             n_layer=2,  # Small for testing
             n_head=2,
             n_embd=128,

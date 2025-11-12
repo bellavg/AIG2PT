@@ -12,8 +12,10 @@ print("-" * 50)
 # Test 1: Can we import everything?
 print("\n1. Testing imports...")
 try:
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from sampling_and_evaluation import AIGEvaluator
+    PACKAGE_ROOT = Path(__file__).parent.parent
+    PROJECT_ROOT = PACKAGE_ROOT.parent
+    sys.path.insert(0, str(PROJECT_ROOT))
+    from aig2pt.sampling_and_evaluation import AIGEvaluator
     print("   ✓ AIGEvaluator imported")
 except Exception as e:
     print(f"   ✗ Import failed: {e}")
@@ -25,7 +27,11 @@ try:
     evaluator = AIGEvaluator()
 
     # Test sequences
-    valid_seq = "<boc> <sepc> NODE_PI IDX_0 <eoc> <bog> <sepg> IDX_0 IDX_1 EDGE_REG <eog>"
+    valid_seq = (
+        "<boc> <sepc> NODE_CONST0 IDX_0 <sepc> NODE_PI IDX_1 <sepc> NODE_AND IDX_2 "
+        "<sepc> NODE_PO IDX_3 <eoc> <bog> <sepg> IDX_0 IDX_2 EDGE_REG "
+        "<sepg> IDX_1 IDX_2 EDGE_INV <sepg> IDX_2 IDX_3 EDGE_REG <eog>"
+    )
     invalid_seq = "invalid sequence"
 
     sequences = [valid_seq, invalid_seq, valid_seq]  # One duplicate
@@ -36,7 +42,7 @@ try:
     print(f"   Invalid: {validity['invalid']}/3")
 
     # Test uniqueness
-    uniqueness = evaluator.evaluate_uniqueness(sequences)
+    uniqueness = evaluator.evaluate_uniqueness(sequences, validity_mask=validity['validity_mask'])
     print(f"   Unique: {uniqueness['unique']}/3")
     print(f"   Duplicates: {uniqueness['duplicates']}")
 
@@ -54,11 +60,16 @@ except Exception as e:
 # Test 3: Check tokenizer exists
 print("\n3. Checking tokenizer...")
 try:
-    tokenizer_path = Path(__file__).parent.parent / 'dataset' / 'tokenizer'
+    tokenizer_path = PACKAGE_ROOT / 'dataset' / 'tokenizer'
     if tokenizer_path.exists():
         from transformers import AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(str(tokenizer_path))
-        print(f"   ✓ Tokenizer loaded: vocab_size={len(tokenizer)}")
+        vocab_size = len(tokenizer)
+        expected_vocab = 72
+        if vocab_size == expected_vocab:
+            print(f"   ✓ Tokenizer loaded: vocab_size={vocab_size}")
+        else:
+            print(f"   ✗ Tokenizer size mismatch: expected {expected_vocab}, got {vocab_size}")
     else:
         print(f"   ⚠ Tokenizer not found at {tokenizer_path}")
 except Exception as e:
@@ -67,7 +78,7 @@ except Exception as e:
 # Test 4: Check data exists
 print("\n4. Checking prepared data...")
 try:
-    data_path = Path(__file__).parent.parent / 'dataset' / 'aig_prepared'
+    data_path = PACKAGE_ROOT / 'dataset' / 'aig_prepared'
     if data_path.exists():
         train_path = data_path / 'train'
         if train_path.exists():

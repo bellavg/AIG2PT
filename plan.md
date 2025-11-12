@@ -17,21 +17,58 @@ This plan outlines the steps to develop and evaluate AIG2PT, a foundation model 
         - [ ] For AIGs: Node types = {`PI`, `CONST`, `AND`}, Edge types = {`FWD`, `NOT`}
         - [ ] Final storage: Binary `.bin` files (memmap) for efficient loading
     - [ ] **Create AIG Tokenizer**
-        - [ ] Build vocabulary: special tokens + node types + edge types + IDX tokens
-        - [ ] Save tokenizer config for HuggingFace AutoTokenizer
+        - [x] Set up local `conda` env (`env.yml`) and install tokenizer dependencies
+        - [ ] Run `pytest tests/test_setup.py` to validate `dataset/setup.py`
+        - [x] Build vocabulary: special tokens + node types + edge types + IDX tokens
+        - [x] Save tokenizer config for HuggingFace AutoTokenizer
+        - [x] Run `python -m aig2pt.dataset.setup` to update stats and generate tokenizer files
     - [ ] **Data Processing Pipeline**
-        - [ ] Parse `.aig` files with `aigverse`
-        - [ ] Convert to PyG format (x, edge_index, edge_attr)
-        - [ ] Serialize to text sequences with BFS/DFS ordering
-        - [ ] Tokenize and save as `.bin` files
-    - [ ] Verify data processing pipeline works on local samples
+        - [x] Parse `.aig` files with `aigverse`
+        - [x] Convert to text sequences and tokenize (prepare_aigs)
+        - [x] Auto-tune block size (`prepare_aigs` updates `aig.yaml` + tokenizer config)
+        - [ ] Serialize to PyTorch-ready `.bin` files for server-scale runs (optional rewrite)
+    - [x] Verify data processing pipeline works on local samples (`pytest tests/test_prepare_aigs.py`)
     - [ ] Create scripts that can scale to server environment
+    - [ ] **Training Pipeline Bring-up**
+        - [x] Adapt `train.py` configs for `aig_prepared/` splits + new `block_size`
+            - [x] Point `processed_data_dir`/`tokenizer_path` to local assets (expect 512 block)
+            - [x] Ensure vocab size matches regenerated tokenizer
+        - [x] Run a local smoke training pass on the prepared splits
+        - [ ] Capture loss curves / sanity metrics for documentation
+    - [ ] **Sampling & Evaluation Prep**
+        - [ ] Wire `sampling_and_evaluation.py` to the AIG tokenizer + checkpoints
+        - [ ] Ensure V.U.N. metric hooks run locally end-to-end
+        - [ ] Document any metric gaps or follow-ups for baselines
+    - [ ] **Training Readiness Checklist**
+        - [x] Confirm `aig2pt/dataset/aig_prepared/` metadata matches expected block size
+        - [ ] Review GPU/CPU resource requirements for smoke run
+        - [ ] Outline logging/metrics capture (stdout, wandb optional)
+        - [ ] Make ready for server deployment multi-GPU
+        - [ ] prep server env
+    - [ ] **Dependency Audit**
+        - [x] `pip install` core runtime libs (`torch`, `transformers`, `tqdm`, `aigverse`, `numpy`, etc.)
+        - [ ] Capture environment freeze (update `env.yml` / `requirements.txt` if needed)
+
+### Near-Term Generation Roadmap
+- [ ] **Prepare Unconditional Random Generation Corpus**
+    - [ ] Finalize sampling script to draw randomized AIG variants for V.U.N. evaluation
+    - [ ] Materialize corpus in text/token format using the updated tokenizer pipeline
+- [ ] **Run V.U.N. Evaluation for AIG2PT**
+    - [ ] Generate samples from current model checkpoint(s)
+    - [ ] Compute Validity, Uniqueness, and Novelty metrics on the random corpus
+- [ ] **Run V.U.N. Evaluation for Baselines**
+    - [ ] Identify baseline generators to compare against (e.g., random heuristics, ABC flows)
+    - [ ] Produce baseline sample sets and score them with the same V.U.N. tooling
+- [ ] **Gate for Additional Datasets** *(waiting on optimization scripts to finish on AIGs)*
+    - [ ] Resume D2/D3/D4 dataset preparation once optimization pipeline lands
+    - [ ] Backfill processed artifacts onto server when scripts are ready
 
 ### Server Production (Future)
+- _Note: Revisit these once the V.U.N. evaluations land and the optimization scripts become available._
 - [ ] **1.1. The "Pre-training" Dataset (For Unconditional Generation)**
-    - [ ] Use a script to generate thousands of structural variations from seed circuits.
+    - [ ] Use the refined sampling pipeline to scale random corpus generation to server scale.
     - [ ] Convert all resulting `.aig` files into graph-sequence format.
-    - [ ] **Deliverable (D1):** A single, massive `pretrain_corpus.txt` file (on server).
+
 - [ ] **1.2. The "Property Prediction" Dataset (For QoR Analysis)**
     - [ ] Take every AIG from your D1 deliverable.
     - [ ] Use a script to run a standard synthesis tool (e.g., `abc -c "ps"`) and extract its area (nodes) and delay (levels).

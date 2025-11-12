@@ -11,6 +11,7 @@
 
 import os
 import sys
+import math
 import numpy as np
 import json
 import torch
@@ -42,14 +43,43 @@ with open(CONFIG_PATH, 'r') as f:
     config = yaml.safe_load(f)
 
 # Paths from config
-INPUT_AIGER_DIR = config.get('raw_data_dir', '/path/to/your/aiger_dataset')
-TOKENIZER_PATH = SCRIPT_DIR / 'tokenizer'
-FINAL_OUTPUT_DIR = SCRIPT_DIR / 'aig_prepared'
+raw_data_dir = config.get('raw_data_dir')
+if not raw_data_dir:
+    print("Error: 'raw_data_dir' missing from config.")
+    sys.exit(1)
 
-# Train/validation/test split ratios
-VAL_SPLIT_RATIO = 0.1   # 10% validation
-TEST_SPLIT_RATIO = 0.1  # 10% test
-# Remaining 80% will be training
+raw_data_path = Path(raw_data_dir)
+if not raw_data_path.is_absolute():
+    raw_data_path = (CONFIG_PATH.parent / raw_data_dir).resolve()
+INPUT_AIGER_DIR = raw_data_path
+
+TOKENIZER_PATH = SCRIPT_DIR / 'tokenizer'
+
+processed_data_dir = config.get('processed_data_dir')
+if processed_data_dir:
+    processed_path = Path(processed_data_dir)
+    if not processed_path.is_absolute():
+        processed_path = (CONFIG_PATH.parent / processed_data_dir).resolve()
+else:
+    processed_path = SCRIPT_DIR / 'aig_prepared'
+FINAL_OUTPUT_DIR = processed_path
+
+# Train/validation/test split ratios from config
+try:
+    VAL_SPLIT_RATIO = float(config.get('val_split_ratio', 0.1))
+    TEST_SPLIT_RATIO = float(config.get('test_split_ratio', 0.1))
+except (TypeError, ValueError):
+    print("Error: 'val_split_ratio' and 'test_split_ratio' must be numeric values.")
+    sys.exit(1)
+
+if VAL_SPLIT_RATIO < 0 or TEST_SPLIT_RATIO < 0:
+    print("Error: split ratios cannot be negative.")
+    sys.exit(1)
+
+TRAIN_SPLIT_RATIO = 1.0 - VAL_SPLIT_RATIO - TEST_SPLIT_RATIO
+if TRAIN_SPLIT_RATIO <= 0:
+    print("Error: Train split ratio must be positive. Please adjust validation/test ratios in the config.")
+    sys.exit(1)
 
 # PAD_TOKEN_ID will be fetched from tokenizer during runtime
 
@@ -241,6 +271,7 @@ if __name__ == '__main__':
     # --- Process Each Split ---
     FINAL_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     metadata = {}
+    overall_max_sequence_length = 0
 
     for split_name, files in file_splits.items():
         if not files:
@@ -282,6 +313,9 @@ if __name__ == '__main__':
         print(f"    Shape: {token_ids_np.shape}")
         print(f"    Max sequence length: {token_ids_np.shape[1]}")
 
+        # Track global max sequence length
+        overall_max_sequence_length = max(overall_max_sequence_length, int(token_ids_np.shape[1]))
+
         # --- Save with Memmap ---
         print(f"  Saving to {split_output_dir}...")
 
@@ -299,7 +333,7 @@ if __name__ == '__main__':
 
         # Save graph IDs as JSON
         graph_ids_path = split_output_dir / 'graph_ids.json'
-        with open(graph_ids_path, 'w') as f:
+        with open(graph_ids_path, 'w', encoding='utf-8') as f:
             json.dump(graph_ids_list, f, indent=2)
 
         # Store metadata
@@ -316,9 +350,44 @@ if __name__ == '__main__':
         print(f"  ✓ Saved {split_name} data")
 
     # --- Save Metadata ---
+    if overall_max_sequence_length > 0:
+        metadata['overall'] = {
+            'max_sequence_length': overall_max_sequence_length
+        }
+
+    # Update block size and tokenizer config based on observed sequence lengths
+    recommended_block_size = None
+    if overall_max_sequence_length > 0:
+        recommended_block_size = 1 << (overall_max_sequence_length - 1).bit_length()
+        current_block_size = config.get('block_size', 1024)
+
+        if recommended_block_size != current_block_size:
+            print("\nUpdating block_size based on prepared data:")
+            print(f"  Observed max sequence length: {overall_max_sequence_length}")
+            print(f"  Recommended block_size (power of two): {recommended_block_size}")
+            print(f"  Previous block_size: {current_block_size}")
+
+            config['block_size'] = recommended_block_size
+            with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+                yaml.safe_dump(config, f, default_flow_style=False, sort_keys=False)
+
+            tokenizer_config_path = TOKENIZER_PATH / 'tokenizer_config.json'
+            try:
+                with open(tokenizer_config_path, 'r', encoding='utf-8') as f:
+                    tokenizer_config = json.load(f)
+            except FileNotFoundError:
+                print(f"Warning: tokenizer_config.json not found at '{tokenizer_config_path}'. Skipping update.")
+            else:
+                tokenizer_config['model_max_length'] = recommended_block_size
+                with open(tokenizer_config_path, 'w', encoding='utf-8') as f:
+                    json.dump(tokenizer_config, f, indent=2)
+
+        if recommended_block_size is not None:
+            metadata.setdefault('overall', {})['recommended_block_size'] = recommended_block_size
+
     meta_path = FINAL_OUTPUT_DIR / 'data_meta.json'
     print(f"\nSaving metadata to: {meta_path}")
-    with open(meta_path, 'w') as f:
+    with open(meta_path, 'w', encoding='utf-8') as f:
         json.dump(metadata, f, indent=2)
 
     print("\n--- Conversion Complete! ---")

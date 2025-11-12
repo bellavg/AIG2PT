@@ -290,15 +290,26 @@ def create_tokenizer(model_config, dataset_config, tokenizer_path):
             }
             for k, v in special_tokens_map.items()
         },
+        "bos_token": "<boc>",
+        "bos_token_id": main_vocab_map.get("<boc>", 0),
         "clean_up_tokenization_spaces": False,
+        "cls_token": "<boc>",
+        "cls_token_id": main_vocab_map.get("<boc>", 0),
         "do_lower_case": False,
+        "eos_token": "<sepg>",
+        "eos_token_id": main_vocab_map.get("<sepg>", 0),
         "extra_special_tokens": {},
         "mask_token": "[MASK]",
+        "mask_token_id": special_tokens_map.get("[MASK]"),
         "model_max_length": dataset_config.get('block_size', 768),
         "pad_token": "[PAD]",
+        "pad_token_id": special_tokens_map.get("[PAD]"),
+        "sep_token": "<sepg>",
+        "sep_token_id": main_vocab_map.get("<sepg>", 0),
         "strip_accents": None,
-        "tokenizer_class": "BertTokenizer",  # Changed from PreTrainedTokenizerFast
-        "unk_token": "[UNK]"
+        "tokenizer_class": "BertTokenizer",
+        "unk_token": "[UNK]",
+        "unk_token_id": special_tokens_map.get("[UNK]")
     }
     with open(os.path.join(tokenizer_path, 'tokenizer_config.json'), 'w') as f:
         json.dump(tokenizer_config_json, f, indent=2)

@@ -24,7 +24,7 @@ SCRIPT_DIR = Path(__file__).parent.absolute()
 
 # Import model
 try:
-    from core.model import GPT, GPTConfig
+    from .core.model import GPT, GPTConfig
     logger.info("Model imported successfully")
 except ImportError as e:
     logger.error(f"Failed to import model: {e}")
@@ -173,6 +173,17 @@ def main():
     processed_data_dir = config.get('processed_data_dir', str(SCRIPT_DIR / 'dataset' / 'aig_prepared'))
     tokenizer_path = config.get('tokenizer_path', str(SCRIPT_DIR / 'dataset' / 'tokenizer'))
 
+    processed_data_path = Path(processed_data_dir)
+    if not processed_data_path.is_absolute():
+        processed_data_path = (SCRIPT_DIR / processed_data_path).resolve()
+
+    tokenizer_path_obj = Path(tokenizer_path)
+    if not tokenizer_path_obj.is_absolute():
+        tokenizer_path_obj = (SCRIPT_DIR / tokenizer_path_obj).resolve()
+
+    processed_data_dir = str(processed_data_path)
+    tokenizer_path = str(tokenizer_path_obj)
+
     # Update output directory with run name
     if wandb_log and wandb_run_name is None:
         wandb_run_name = f"{dataset_name}-{model_name}"
@@ -231,6 +242,8 @@ def main():
 
     # Data loaders
     train_sampler = DistributedSampler(train_dataset, shuffle=True) if ddp else None
+    num_loader_workers = config.get('num_loader_workers', 8)
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -238,7 +251,7 @@ def main():
         shuffle=(train_sampler is None),
         pin_memory=True,
         drop_last=False,
-        num_workers=8,
+        num_workers=num_loader_workers,
         collate_fn=data_collate_fn
     )
 
@@ -250,7 +263,7 @@ def main():
         shuffle=False,
         pin_memory=True,
         drop_last=False,
-        num_workers=8,
+        num_workers=num_loader_workers,
         collate_fn=data_collate_fn
     )
 

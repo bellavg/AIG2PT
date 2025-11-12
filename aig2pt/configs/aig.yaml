@@ -1,10 +1,12 @@
 name: aig
-raw_data_dir: /Users/bellavg/AIG2PT/raw_data/adder
+raw_data_dir: ../../local_tryout_data/EPFL/adder
 processed_data_dir: ''
 tokenizer_path: ./dataset/tokenizer
-block_size: 1024
+block_size: 512
 pad_value: -100
 max_node_count: 56
+val_split_ratio: 0.1
+test_split_ratio: 0.1
 pi_counts:
   min: 2
   max: 12
