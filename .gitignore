@@ -18,6 +18,11 @@ aig2pt/dataset/aig_prepared/
 *.aig
 *.aag
 
+# Model checkpoints
+*.pth
+checkpoints/
+samples/
+
 # Distribution / packaging
 .Python
 .idea

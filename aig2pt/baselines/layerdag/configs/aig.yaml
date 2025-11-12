@@ -1,0 +1,56 @@
+general:
+  dataset: aig
+  conditional: false  # Unconditional generation
+  patience: 10
+
+node_count:
+  loader:
+    batch_size: 64
+    num_workers: 2
+  model:
+    x_n_emb_size: 64
+    y_emb_size: 0  # No conditional info for unconditional generation
+    num_mpnn_layers: 3
+    pool: 'sum'
+  num_epochs: 300
+  optimizer:
+    lr: 0.0003
+    amsgrad: true
+
+node_pred:
+  T: 64  # Number of diffusion steps
+  loader:
+    batch_size: 128
+    num_workers: 2
+  num_epochs: 500
+  graph_encoder:
+    x_n_emb_size: 256
+    y_emb_size: 0  # No conditional info
+    num_mpnn_layers: 2
+    pool: 'sum'
+  predictor:
+    t_emb_size: 128
+    out_hidden_size: 256
+    num_transformer_layers: 1
+    num_heads: 4
+    dropout: 0.1
+  optimizer:
+    lr: 0.0003
+    amsgrad: true
+
+edge_pred:
+  T: 16  # Number of diffusion steps for edges
+  loader:
+    batch_size: 128
+    num_workers: 2
+  num_epochs: 500
+  graph_encoder:
+    x_n_emb_size: 128
+    y_emb_size: 0  # No conditional info
+    num_mpnn_layers: 3
+  predictor:
+    t_emb_size: 128
+    out_hidden_size: 160
+  optimizer:
+    lr: 0.0003
+    amsgrad: true
