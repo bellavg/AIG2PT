@@ -29,6 +29,12 @@ pip install dgl==1.1.0+cu116 -f https://data.dgl.ai/wheels/cu116/repo.html
 
 # Install other dependencies
 pip install tqdm einops pydantic pyyaml
+
+# Install aigverse for AIG file processing
+pip install aigverse
+
+# Optional: Install networkx for enhanced aigverse support
+pip install networkx
 ```
 
 **Note**: If you encounter errors about `libcusparse.so`, you may need to set the library path:
@@ -38,7 +44,40 @@ export LD_LIBRARY_PATH=/path/to/conda/envs/aig2pt/lib:$LD_LIBRARY_PATH
 
 ## Data Format
 
-LayerDAG expects AIGs in PyTorch Geometric format. The dataset should be organized as:
+AIGs start as raw `.aig` files (AIGER format). Before training LayerDAG, you need to convert them to PyTorch Geometric format:
+
+### Step 1: Organize Raw AIG Files
+
+```
+raw_aig_dir/
+  train/
+    circuit1.aig
+    circuit2.aig
+    ...
+  val/
+    circuit_v1.aig
+    ...
+  test/
+    circuit_t1.aig
+    ...
+```
+
+### Step 2: Convert to PyG Format
+
+Use the provided preprocessing script:
+
+```bash
+python preprocess_aigs.py \
+    --input_dir /path/to/raw_aig_dir \
+    --output_dir /path/to/data_dir
+```
+
+**Note**: The preprocessing script automatically leverages aigverse utilities:
+- Uses `to_networkx` for conversion when available (handles synthetic PO nodes)
+- Falls back to `to_edge_list` for efficient edge extraction
+- Preserves topological ordering from aigverse
+
+This creates:
 
 ```
 data_dir/
@@ -48,10 +87,10 @@ data_dir/
     test.pt
 ```
 
-Each PyG Data object should have:
+Each PyG Data object contains:
 - `x`: Node features (shape: [num_nodes] or [num_nodes, num_features])
 - `edge_index`: Edge connectivity (shape: [2, num_edges])
-- `edge_attr`: Edge attributes (optional, for edge inversions)
+- `edge_attr`: Edge attributes (for edge inversions)
 
 ## Training
 

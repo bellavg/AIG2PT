@@ -7,7 +7,8 @@ This implementation provides a complete foundation for using LayerDAG as a basel
 ## Key Components
 
 ### 1. Dataset Adapter (`dataset/aig_layerdag.py`)
-- Converts PyTorch Geometric AIG datasets to LayerDAG's expected format
+- Converts raw `.aig` files (via PyG intermediate format) to LayerDAG's expected format
+- **Data Pipeline**: Raw `.aig` files → `preprocess_aigs.py` → PyG `.pt` files → LayerDAG format
 - Handles AIG-specific node types: CONST (0), PI (1), AND (2)
 - Supports both categorical and one-hot encoded node features
 - Provides `load_aig_dataset()` function for easy loading

@@ -66,6 +66,7 @@ def validate_structure():
     scripts = [
         'train_layerdag.py',
         'sample_layerdag.py',
+        'preprocess_aigs.py',
         'setup_utils.py'
     ]
     for f in scripts:
@@ -106,6 +107,7 @@ def check_imports():
         'setup_utils.py',
         'train_layerdag.py',
         'sample_layerdag.py',
+        'preprocess_aigs.py',
     ]
     
     all_valid = True

@@ -32,28 +32,47 @@ pip install dgl==1.1.0+cu116 -f https://data.dgl.ai/wheels/cu116/repo.html
 
 ### 1. Prepare Your Data
 
-Ensure your AIG dataset is in PyTorch Geometric format:
+AIGs start as raw `.aig` files in AIGER format. Organize them by split:
+
 ```
-your_data_dir/
-  raw/
-    train.pt  # List of PyG Data objects
-    val.pt
-    test.pt
+raw_aig_files/
+  train/
+    circuit1.aig
+    circuit2.aig
+    ...
+  val/
+    ...
+  test/
+    ...
 ```
 
-### 2. Train the Model
+### 2. Preprocess to PyG Format
+
+Convert raw `.aig` files to PyTorch Geometric format:
+
+```bash
+cd aig2pt/baselines/layerdag
+
+python preprocess_aigs.py \
+    --input_dir /path/to/raw_aig_files \
+    --output_dir /path/to/processed_data
+```
+
+This creates `processed_data/raw/{train,val,test}.pt` files.
+
+### 3. Train the Model
 
 ```bash
 cd aig2pt/baselines/layerdag
 
 python train_layerdag.py \
     --config_file configs/aig.yaml \
-    --data_dir /path/to/your/aig/dataset \
+    --data_dir /path/to/processed_data \
     --output_dir ./checkpoints \
     --seed 42
 ```
 
-### 3. Generate AIGs
+### 4. Generate AIGs
 
 ```bash
 python sample_layerdag.py \

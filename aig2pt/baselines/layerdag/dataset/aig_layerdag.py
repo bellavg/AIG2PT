@@ -1,7 +1,13 @@
 """
 AIG Dataset adapter for LayerDAG.
 
-Converts AIG PyTorch Geometric datasets to LayerDAG's format for layer-wise DAG generation.
+Converts AIG data from raw .aig files (via PyG intermediate format) to LayerDAG's 
+layer-based format for DAG generation.
+
+Pipeline:
+  1. Raw .aig files → preprocess_aigs.py → PyG Data objects (.pt files)
+  2. PyG Data objects → AIGDAGDataset → LayerDAG format
+
 AIGs (AND-Inverter Graphs) are represented as DAGs with:
 - Node types: CONST (0), PI (Primary Input), AND gates
 - Edge types: FWD (forward/non-inverting), INV (inverting)

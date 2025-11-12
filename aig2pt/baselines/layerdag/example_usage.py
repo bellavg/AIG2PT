@@ -15,29 +15,31 @@ def example_layerdag_training():
     print("LayerDAG Training Example")
     print("="*60)
     
-    # Typical data directory structure for aig2pt
-    # Assumes you have PyG data in this format
-    data_dir = "/path/to/your/aig/dataset"
+    # Raw AIG files structure
+    raw_aig_dir = "/path/to/raw/aig/files"
     
-    print(f"\n1. Data directory: {data_dir}")
+    print(f"\n1. Raw AIG data directory: {raw_aig_dir}")
     print("   Expected structure:")
-    print("     raw/")
-    print("       train.pt  (list of PyG Data objects)")
-    print("       val.pt")
-    print("       test.pt")
+    print("     train/")
+    print("       circuit1.aig")
+    print("       circuit2.aig")
+    print("       ...")
+    print("     val/")
+    print("       ...")
+    print("     test/")
+    print("       ...")
     
-    print("\n2. Loading dataset...")
-    # In practice, uncomment below to actually run:
-    # from aig2pt.baselines.layerdag.dataset import load_aig_dataset
-    # train_set, val_set, test_set = load_aig_dataset(data_dir)
-    print("   from aig2pt.baselines.layerdag.dataset import load_aig_dataset")
-    print("   train_set, val_set, test_set = load_aig_dataset(data_dir)")
+    print("\n2. Preprocessing: Convert .aig to PyG format")
+    print("   cd aig2pt/baselines/layerdag")
+    print("   python preprocess_aigs.py \\")
+    print(f"       --input_dir {raw_aig_dir} \\")
+    print("       --output_dir ./processed_data")
+    print("\n   This creates: processed_data/raw/{train,val,test}.pt")
     
     print("\n3. Training Stage 1 (Node Count Prediction)...")
-    print("   cd aig2pt/baselines/layerdag")
     print("   python train_layerdag.py \\")
     print("       --config_file configs/aig.yaml \\")
-    print(f"       --data_dir {data_dir} \\")
+    print("       --data_dir ./processed_data \\")
     print("       --output_dir ./checkpoints \\")
     print("       --seed 42")
     
@@ -119,31 +121,34 @@ def example_end_to_end_workflow():
     print("="*60)
     
     workflow = """
-Step 1: Prepare Data
-  → Convert .aig files to PyG format
-  → Save as raw/train.pt, raw/val.pt, raw/test.pt
+Step 1: Prepare Raw AIG Files
+  → Organize .aig files into train/val/test directories
   
-Step 2: Analyze Dataset
+Step 2: Preprocess to PyG Format
+  → python preprocess_aigs.py --input_dir raw_aigs --output_dir processed_data
+  → Creates: processed_data/raw/train.pt, val.pt, test.pt
+  
+Step 3: Analyze Dataset
   → Compute statistics (layers, nodes, edges)
   → Determine hyperparameters
   
-Step 3: Train Stage 1 (Node Count)
-  → python train_layerdag.py --stage node_count
+Step 4: Train Stage 1 (Node Count)
+  → python train_layerdag.py --stage node_count --data_dir processed_data
   → Saves: checkpoints/node_count_model.pth
   
-Step 4: Train Stage 2 (Node Diffusion) [TO BE IMPLEMENTED]
-  → python train_layerdag.py --stage node_diffusion
+Step 5: Train Stage 2 (Node Diffusion) [TO BE IMPLEMENTED]
+  → python train_layerdag.py --stage node_diffusion --data_dir processed_data
   → Saves: checkpoints/node_diffusion_model.pth
   
-Step 5: Train Stage 3 (Edge Diffusion) [TO BE IMPLEMENTED]
-  → python train_layerdag.py --stage edge_diffusion
+Step 6: Train Stage 3 (Edge Diffusion) [TO BE IMPLEMENTED]
+  → python train_layerdag.py --stage edge_diffusion --data_dir processed_data
   → Saves: checkpoints/edge_diffusion_model.pth
   
-Step 6: Sample AIGs
+Step 7: Sample AIGs
   → python sample_layerdag.py --num_samples 1000
   → Generates: samples/sampled_aigs.pth
   
-Step 7: Evaluate
+Step 8: Evaluate
   → Compute V.U.N. metrics
   → Compare with GPT baseline
   → Analyze graph properties
