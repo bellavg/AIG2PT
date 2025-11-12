@@ -1,0 +1,23 @@
+# LayerDAG Baseline Configuration
+# Configuration for adapting LayerDAG for AIG generation
+
+model:
+  name: layerdag
+  hidden_dim: 128      # Hidden dimension for neural networks
+  num_layers: 3        # Number of model layers
+  max_nodes: 50        # Maximum number of AND nodes
+  diffusion_steps: 10  # Number of diffusion steps
+  max_graph_layers: 5  # Maximum number of layers in generated DAG
+
+generation:
+  num_samples: 100     # Number of AIGs to generate
+  temperature: 1.0     # Sampling temperature
+  max_nodes: 50        # Maximum AND nodes per AIG
+  num_inputs: 4        # Number of primary inputs
+
+# Training (optional - for future fine-tuning)
+training:
+  batch_size: 32
+  learning_rate: 1.0e-3
+  num_epochs: 100
+  warmup_steps: 500
