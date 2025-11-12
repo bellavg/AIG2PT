@@ -148,8 +148,7 @@ def train_dvae(args):
         optimizer,
         mode='min',
         factor=0.5,
-        patience=args.patience,
-        verbose=True
+        patience=args.patience
     )
     
     # Training loop
