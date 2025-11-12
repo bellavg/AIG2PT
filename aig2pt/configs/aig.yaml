@@ -1,8 +1,8 @@
 name: aig
-raw_data_dir: ../raw_data
+raw_data_dir: /Users/bellavg/AIG2PT/raw_data/adder
 processed_data_dir: ''
 tokenizer_path: ./dataset/tokenizer
-block_size: 768
+block_size: 1024
 pad_value: -100
 max_node_count: 56
 pi_counts:
@@ -24,3 +24,6 @@ tokens:
   - EDGE_REG
   - EDGE_INV
 vocab_size: 72
+edge_counts:
+  min: 9
+  max: 95

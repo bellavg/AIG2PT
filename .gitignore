@@ -5,9 +5,17 @@ __pycache__/
 
 # C extensions
 *.so
+
+# Data directories - exclude to prevent syncing large datasets
 raw_data/
+aig2pt/dataset/aig_prepared/
+*.bin
+*.aig
+*.aag
+
 # Distribution / packaging
 .Python
+.idea
 build/
 develop-eggs/
 dist/
