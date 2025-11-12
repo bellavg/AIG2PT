@@ -7,6 +7,7 @@ __pycache__/
 .DS_Store
 *.DS_Store
 
+*.pt
 # C extensions
 *.so
 
