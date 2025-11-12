@@ -1,0 +1,24 @@
+# Circuit Transformer Baseline Configuration
+# Configuration for adapting Circuit Transformer for AIG generation
+
+model:
+  name: circuit_transformer
+  n_embd: 256          # Embedding dimension
+  n_layer: 4           # Number of transformer layers
+  n_head: 4            # Number of attention heads
+  max_nodes: 50        # Maximum number of AND nodes
+  vocab_size: 72       # Size of token vocabulary (from AIG config)
+  dropout: 0.1         # Dropout rate
+
+generation:
+  num_samples: 100     # Number of AIGs to generate
+  temperature: 1.0     # Sampling temperature
+  max_nodes: 50        # Maximum AND nodes per AIG
+  num_inputs: 4        # Number of primary inputs
+
+# Training (optional - for future fine-tuning)
+training:
+  batch_size: 32
+  learning_rate: 3.0e-4
+  num_epochs: 100
+  warmup_steps: 1000

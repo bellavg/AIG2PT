@@ -32,3 +32,26 @@ sampling:
 # Other
 seed: 42
 no_cuda: false
+# D-VAE Baseline Configuration
+# Configuration for adapting D-VAE for AIG generation
+
+model:
+  name: dvae
+  hidden_dim: 128      # Hidden dimension for encoder/decoder
+  latent_dim: 64       # Dimension of latent space
+  max_nodes: 50        # Maximum number of nodes
+  num_node_types: 3    # Number of node types (CONST0, PI, AND)
+
+generation:
+  num_samples: 100     # Number of AIGs to generate
+  temperature: 1.0     # Sampling temperature for latent space
+  max_nodes: 50        # Maximum AND nodes per AIG
+  num_inputs: 4        # Number of primary inputs
+
+# Training (optional - for future fine-tuning)
+training:
+  batch_size: 32
+  learning_rate: 1.0e-3
+  num_epochs: 100
+  beta: 1.0            # KL divergence weight
+  warmup_steps: 500
